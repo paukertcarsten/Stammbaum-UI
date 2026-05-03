@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Familienstammbaum – Eisenberg'scher Nachfahrenverband</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#1a1410;--parchment:#f5f0e8;--warm:#e8dcc8;--sienna:#8b4513;
+    --gold:#c8963c;--muted:#7a6e62;--danger:#9b2335;--success:#2d6a4f;
+    --border:#c8b89a;--card:#faf7f2;--shadow:0 2px 12px rgba(26,20,16,0.10);
+    --admin:#1a3a5c;--review:#b06000;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Mono',monospace;background:var(--parchment);color:var(--ink);min-height:100vh;font-size:13px;}
+
+  /* ── HEADER ── */
+  header{background:var(--ink);color:var(--parchment);padding:14px 16px 10px;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--gold);}
+  header h1{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;letter-spacing:.02em;line-height:1.2;}
+  header .subtitle{font-size:10px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-top:1px;}
+  .header-row{display:flex;align-items:center;justify-content:space-between;margin-top:5px;flex-wrap:wrap;gap:6px;}
+  .user-badge{display:inline-block;background:var(--sienna);color:var(--parchment);font-size:11px;padding:2px 8px;border-radius:2px;letter-spacing:.05em;}
+  .admin-badge{background:var(--admin);color:#fff;font-size:10px;padding:2px 8px;border-radius:2px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:none;font-family:'DM Mono',monospace;}
+  .admin-badge.active{background:var(--gold);color:var(--ink);}
+
+  /* ── BREADCRUMB ── */
+  .breadcrumb{display:flex;align-items:center;gap:0;background:var(--warm);border-bottom:1px solid var(--border);padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;min-height:36px;}
+  .bc-item{display:flex;align-items:center;gap:0;flex-shrink:0;}
+  .bc-btn{background:none;border:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);cursor:pointer;padding:10px 12px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;transition:color .2s;}
+  .bc-btn:hover{color:var(--sienna);}
+  .bc-btn.active{color:var(--ink);font-weight:500;cursor:default;}
+  .bc-sep{color:var(--border);font-size:12px;flex-shrink:0;}
+  .bc-admin{color:var(--admin);}
+
+  /* ── BOTTOM NAV (persistente Tabs) ── */
+  nav.bottom-nav{display:flex;background:var(--ink);border-top:2px solid var(--gold);position:fixed;bottom:0;left:0;right:0;z-index:100;}
+  nav.bottom-nav button{flex:1;padding:10px 4px 8px;border:none;background:none;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);cursor:pointer;letter-spacing:.04em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .2s;}
+  nav.bottom-nav button .nav-icon{font-size:16px;}
+  nav.bottom-nav button.active{color:var(--gold);}
+  nav.bottom-nav button.admin-tab{color:#4a7aac;}
+  nav.bottom-nav button.admin-tab.active{color:var(--gold);}
+
+  main{padding:14px 14px 72px;max-width:600px;margin:0 auto;}
+
+  /* ── CARD ── */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .card-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--sienna);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+  .card-title.admin-title{color:var(--admin);}
+
+  /* ── FORM ── */
+  .field-group{margin-bottom:11px;}
+  .field-group label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+  .field-group label .req{color:var(--danger);}
+  .field-group label .gedcom-tag{color:var(--gold);font-size:9px;margin-left:4px;}
+  input[type="text"],input[type="date"],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:3px;background:#fff;font-family:'DM Mono',monospace;font-size:13px;color:var(--ink);appearance:none;transition:border-color .2s;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--sienna);}
+  input[readonly]{background:var(--warm);color:var(--muted);}
+  textarea{resize:vertical;min-height:65px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  /* ── SECTION TOGGLE ── */
+  .section-toggle{width:100%;background:var(--warm);border:1px solid var(--border);border-radius:3px;padding:9px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;letter-spacing:.05em;text-transform:uppercase;transition:background .2s;}
+  .section-toggle:hover{background:var(--border);}
+  .section-toggle .arrow{transition:transform .2s;display:inline-block;}
+  .section-toggle.open .arrow{transform:rotate(180deg);}
+  .section-content{display:none;padding-bottom:4px;}
+  .section-content.open{display:block;}
+
+  /* ── GESCHWISTER ── */
+  .sibling-toggle{display:flex;align-items:center;gap:8px;padding:5px 10px;margin:2px 0 2px 14px;font-size:10px;color:var(--muted);cursor:pointer;letter-spacing:.06em;text-transform:uppercase;border:none;border-left:2px dashed var(--border);background:none;width:calc(100% - 14px);text-align:left;transition:color .2s;}
+  .sibling-toggle:hover{color:var(--sienna);}
+  .sibling-list{display:none;margin-left:14px;border-left:2px dashed var(--border);}
+  .sibling-list.open{display:block;}
+  .sibling-chip{display:flex;align-items:center;gap:8px;background:var(--warm);border:1px solid var(--border);border-radius:3px;padding:7px 10px;margin-bottom:5px;cursor:pointer;transition:border-color .2s;opacity:.85;}
+  .sibling-chip:hover{border-color:var(--sienna);opacity:1;}
+  .sibling-chip .num{font-size:10px;color:var(--gold);min-width:58px;}
+  .sibling-chip .name{font-family:'Cormorant Garamond',serif;font-size:14px;flex:1;}
+  .sibling-chip .rel{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+  /* ── PERSON CHIP ── */
+  .person-chip{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:3px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:border-color .2s;position:relative;}
+  .person-chip:hover{border-color:var(--sienna);}
+  .person-chip .num{font-size:11px;color:var(--gold);font-weight:500;min-width:68px;}
+  .person-chip .name{font-family:'Cormorant Garamond',serif;font-size:16px;flex:1;}
+  .person-chip .dates{font-size:10px;color:var(--muted);}
+  .person-chip .relation-badge{font-size:9px;padding:2px 6px;border-radius:2px;background:var(--warm);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  /* Review-Flag auf Chip */
+  .review-flag{position:absolute;top:-1px;right:-1px;background:var(--review);color:#fff;font-size:8px;padding:1px 5px;border-radius:0 3px 0 3px;letter-spacing:.08em;text-transform:uppercase;}
+
+  /* ── BUTTONS ── */
+  .btn{padding:11px 18px;border:none;border-radius:3px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;}
+  .btn-primary{background:var(--sienna);color:var(--parchment);}
+  .btn-primary:hover{background:#6b3410;}
+  .btn-secondary{background:transparent;color:var(--sienna);border:1px solid var(--sienna);}
+  .btn-back{background:transparent;color:var(--muted);border:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+  .btn-back:hover{border-color:var(--sienna);color:var(--sienna);}
+  .btn-admin{background:var(--admin);color:#fff;}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-sm{padding:6px 11px;font-size:10px;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+
+  /* ── ALERTS ── */
+  .alert{padding:9px 12px;border-radius:3px;font-size:12px;margin-bottom:11px;line-height:1.5;}
+  .alert-warn{background:#fef3cd;border:1px solid var(--gold);color:#7a5c00;}
+  .alert-info{background:#e8f4f8;border:1px solid #7ab8cc;color:#1a4a5c;}
+  .alert-success{background:#d4edda;border:1px solid var(--success);color:var(--success);}
+  .alert-review{background:#fff3e0;border:1px solid var(--review);color:var(--review);}
+  .alert-admin{background:#e8eef5;border:1px solid var(--admin);color:var(--admin);}
+
+  /* ── HISTORY ── */
+  .history-entry{border-left:3px solid var(--gold);padding:8px 12px;margin-bottom:8px;background:var(--card);border-radius:0 3px 3px 0;}
+  .history-entry .meta{font-size:10px;color:var(--muted);margin-bottom:3px;}
+  .history-entry .change{font-size:12px;}
+  .history-entry .change .old{color:var(--danger);text-decoration:line-through;}
+  .history-entry .change .new{color:var(--success);}
+
+  /* ── GEDCOM ── */
+  .gedcom-preview{background:#1a1410;color:#c8b89a;padding:12px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;line-height:1.7;overflow-x:auto;white-space:pre;max-height:300px;overflow-y:auto;}
+
+  /* ── QUEUE ── */
+  .queue-entry{border:1px solid var(--border);border-radius:3px;padding:10px 12px;margin-bottom:8px;background:#fff;}
+  .queue-entry .q-meta{font-size:10px;color:var(--muted);margin-bottom:4px;}
+  .queue-entry .q-detail{font-size:12px;margin-bottom:8px;line-height:1.5;}
+  .queue-entry .q-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .queue-entry.pending{border-left:3px solid var(--review);}
+  .queue-entry.cross{border-left:3px solid var(--danger);}
+  .queue-entry.done{border-left:3px solid var(--success);opacity:.6;}
+
+  /* ── DOTS ── */
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
+  .dot-green{background:var(--success);}.dot-yellow{background:var(--gold);}.dot-blue{background:var(--admin);}.dot-review{background:var(--review);}
+
+  /* ── GEN LABEL ── */
+  .gen-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);text-align:center;padding:8px 0 4px;position:relative;}
+  .gen-label::before,.gen-label::after{content:'';position:absolute;top:50%;width:28%;height:1px;background:var(--border);}
+  .gen-label::before{left:0;}.gen-label::after{right:0;}
+
+  /* ── NUM FIELD ── */
+  .num-field-wrapper{display:flex;gap:6px;align-items:center;}
+  .num-field-wrapper input{flex:1;}
+  .num-valid{color:var(--success);font-size:16px;}
+  .num-invalid{color:var(--danger);font-size:16px;}
+  .cross-flag{display:inline-flex;align-items:center;gap:6px;background:#fff3e0;border:1px solid var(--gold);color:#7a5c00;padding:4px 10px;border-radius:3px;font-size:10px;}
+
+  /* ── MODAL ── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,20,16,.75);z-index:200;align-items:center;justify-content:center;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--card);border-radius:4px;border:1px solid var(--border);padding:18px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;}
+  .modal-title{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--sienna);margin-bottom:14px;}
+
+  /* ── VIEWS ── */
+  .view{display:none;}.view.active{display:block;}
+  .spacer{height:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Eisenberg'scher Nachfahrenverband</h1>
+  <div class="subtitle">Stammbaum-Datenpflege</div>
+  <div class="header-row">
+    <div class="user-badge">B6114a – Mustermann, Hans</div>
+    <button class="admin-badge" id="adminToggle" onclick="toggleAdmin()">Admin-Modus</button>
+  </div>
+</header>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb" id="breadcrumb"></div>
+<!-- ZURÜCK-BUTTON (dynamisch, nur wenn Stack > 1) -->
+<div id="back-bar" style="display:none; background:var(--warm); border-bottom:1px solid var(--border); padding:0;">
+  <button id="back-btn" onclick="navigateBack()"
+    style="width:100%; background:none; border:none; font-family:'DM Mono',monospace; font-size:11px;
+    color:var(--sienna); text-align:left; padding:9px 16px; cursor:pointer; letter-spacing:.04em;
+    display:flex; align-items:center; gap:6px;">
+    <span style="font-size:14px;">‹</span>
+    <span id="back-label">Zurück</span>
+  </button>
+</div>
+
+<main>
+
+  <!-- ══════════════ VIEW: BAUM ══════════════ -->
+  <div class="view active" id="view-tree">
+    <div class="card">
+      <div class="card-title">🌳 Mein Stammbaum-Ausschnitt</div>
+      <div class="alert alert-info" style="font-size:11px;">Tippen Sie auf eine Person zum Bearbeiten. ▼ klappt Geschwister auf.</div>
+
+      <!-- Chips werden per JS aus DB.persons befüllt -->
+      <div id="tree-gen2"></div>
+      <div id="tree-gen1"></div>
+      <div id="tree-gen0"></div>
+      <div id="tree-gen-1"></div>
+      <div id="tree-gen-2"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="initNewPerson('')">+ Person hinzufügen</button>
+        <button class="btn btn-secondary" onclick="drillFamily()">Familienverbindung</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ VIEW: PERSON ══════════════ -->
+  <div class="view" id="view-person">
+    <div class="card">
+      <div class="card-title" id="person-view-title">✏️ Person bearbeiten</div>
+
+      <div class="field-group">
+        <label>Familienkennziffer <span class="req">*</span> <span class="gedcom-tag">_FAMN</span></label>
+        <div class="num-field-wrapper">
+          <input type="text" id="f_kennziffer" placeholder="z.B. B6114a" oninput="validateKennziffer(this)" style="font-weight:500;letter-spacing:.08em;">
+          <span id="kz-valid" class="num-valid" style="display:none">✓</span>
+          <span id="kz-invalid" class="num-invalid" style="display:none">✗</span>
+        </div>
+        <div id="kz-hint" style="font-size:10px;color:var(--muted);margin-top:3px;"></div>
+      </div>
+      <div id="cross-family-flag" style="display:none;margin-bottom:10px;"><div class="cross-flag">⚠ Stammübergreifend – Admin-Prüfung erforderlich</div></div>
+      <div id="no-edit-flag" style="display:none;margin-bottom:10px;"><div class="alert alert-warn">⛔ Außerhalb Ihres Bearbeitungsbereichs (±2 Gen., Stamm B).</div></div>
+
+      <button class="section-toggle open" onclick="toggleSection(this,'sec-person')">Personendaten <span class="arrow">▼</span></button>
+      <div class="section-content open" id="sec-person">
+        <div class="field-row">
+          <div class="field-group"><label>Vorname(n) <span class="req">*</span> <span class="gedcom-tag">GIVN</span></label><input type="text" id="f_givenname" placeholder="Vorname"></div>
+          <div class="field-group"><label>Rufname <span class="gedcom-tag">NICK</span></label><input type="text" id="f_nickname" placeholder="Rufname"></div>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>Nachname <span class="req">*</span> <span class="gedcom-tag">SURN</span></label><input type="text" id="f_surname" placeholder="Nachname"></div>
+          <div class="field-group"><label>Geburtsname <span class="gedcom-tag">_MARN</span></label><input type="text" id="f_birthname" placeholder="geb."></div>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>Namenspräfix <span class="gedcom-tag">NPFX</span></label><input type="text" id="f_prefix" placeholder="Dr., Prof."></div>
+          <div class="field-group"><label>Namenssuffix <span class="gedcom-tag">NSFX</span></label><input type="text" id="f_suffix" placeholder="Jr., III"></div>
+        </div>
+        <div class="field-group"><label>Geschlecht <span class="req">*</span> <span class="gedcom-tag">SEX</span></label>
+          <select id="f_sex"><option value="">– bitte wählen –</option><option value="M">Männlich (M)</option><option value="F">Weiblich (F)</option><option value="X">Divers (X)</option><option value="U">Unbekannt (U)</option></select>
+        </div>
+        <div class="field-group"><label>Beziehungstyp <span class="gedcom-tag">_RELA</span></label>
+          <select id="f_reltype"><option value="bio">Leibliches Mitglied</option><option value="spouse_a">Ehepartner 1. Ehe (a)</option><option value="spouse_b">Ehepartner 2. Ehe (b)</option><option value="spouse_c">Ehepartner 3. Ehe (c)</option><option value="partner_p">Lebenspartner (p)</option><option value="step">Mitgebrachtes Kind</option></select>
+        </div>
+      </div>
+
+      <button class="section-toggle" onclick="toggleSection(this,'sec-birth')">Geburt &amp; Taufe <span class="arrow">▼</span></button>
+      <div class="section-content" id="sec-birth">
+        <div class="field-row">
+          <div class="field-group"><label>Geburtsdatum <span class="gedcom-tag">BIRT DATE</span></label><input type="date" id="f_birthdate"></div>
+          <div class="field-group"><label>Datum ungenau</label><input type="text" id="f_birthdate_approx" placeholder="ca. 1920"></div>
+        </div>
+        <div class="field-group"><label>Geburtsort <span class="gedcom-tag">BIRT PLAC</span></label><input type="text" id="f_birthplace" placeholder="Ort, Region, Land"></div>
+        <div class="field-group"><label>Koordinaten <span class="gedcom-tag">BIRT MAP</span></label><input type="text" id="f_birthmap" placeholder="52.52° N, 13.40° E"></div>
+        <div class="field-row">
+          <div class="field-group"><label>Taufdatum <span class="gedcom-tag">CHR DATE</span></label><input type="date" id="f_chrdate"></div>
+          <div class="field-group"><label>Taufort <span class="gedcom-tag">CHR PLAC</span></label><input type="text" id="f_chrplace" placeholder="Kirche, Ort"></div>
+        </div>
+      </div>
+
+      <button class="section-toggle" onclick="toggleSection(this,'sec-death')">Tod &amp; Bestattung <span class="arrow">▼</span></button>
+      <div class="section-content" id="sec-death">
+        <div class="field-group"><label>Status <span class="gedcom-tag">DEAT</span></label>
+          <select id="f_living"><option value="Y">Lebt</option><option value="N">Verstorben</option><option value="U">Unbekannt</option></select>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>Sterbedatum <span class="gedcom-tag">DEAT DATE</span></label><input type="date" id="f_deathdate"></div>
+          <div class="field-group"><label>Datum ungenau</label><input type="text" id="f_deathdate_approx" placeholder="ca. 1998"></div>
+        </div>
+        <div class="field-group"><label>Sterbeort <span class="gedcom-tag">DEAT PLAC</span></label><input type="text" id="f_deathplace" placeholder="Ort, Region, Land"></div>
+        <div class="field-group"><label>Todesursache <span class="gedcom-tag">CAUS</span></label><input type="text" id="f_deathcause" placeholder="optional"></div>
+        <div class="field-row">
+          <div class="field-group"><label>Begräbnisdatum <span class="gedcom-tag">BURI DATE</span></label><input type="date" id="f_burialdate"></div>
+          <div class="field-group"><label>Begräbnisort <span class="gedcom-tag">BURI PLAC</span></label><input type="text" id="f_burialplace" placeholder="Friedhof, Ort"></div>
+        </div>
+        <div class="field-group"><label>Kremation <span class="gedcom-tag">CREM</span></label>
+          <select id="f_cremation"><option value="">– unbekannt –</option><option value="Y">Ja</option><option value="N">Nein</option></select>
+        </div>
+      </div>
+
+      <button class="section-toggle" onclick="toggleSection(this,'sec-work')">Beruf &amp; Bildung <span class="arrow">▼</span></button>
+      <div class="section-content" id="sec-work">
+        <div class="field-group"><label>Beruf <span class="gedcom-tag">OCCU</span></label><input type="text" id="f_occupation" placeholder="Beruf / Tätigkeit"></div>
+        <div class="field-group"><label>Ausbildung <span class="gedcom-tag">EDUC</span></label><input type="text" id="f_education" placeholder="Schulabschluss, Studium"></div>
+        <div class="field-group"><label>Titel <span class="gedcom-tag">TITL</span></label><input type="text" id="f_title" placeholder="Amtsbezeichnung"></div>
+        <div class="field-row">
+          <div class="field-group"><label>Religion <span class="gedcom-tag">RELI</span></label><input type="text" id="f_religion" placeholder="Konfession"></div>
+          <div class="field-group"><label>Nationalität <span class="gedcom-tag">NATI</span></label><input type="text" id="f_nationality" placeholder="Staatsangeh."></div>
+        </div>
+      </div>
+
+      <button class="section-toggle" onclick="toggleSection(this,'sec-resi')">Wohnorte <span class="arrow">▼</span></button>
+      <div class="section-content" id="sec-resi">
+        <div id="resi-list"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addResiEntry()">+ Wohnort hinzufügen</button>
+      </div>
+
+      <button class="section-toggle" onclick="toggleSection(this,'sec-notes')">Quellen &amp; Notizen <span class="arrow">▼</span></button>
+      <div class="section-content" id="sec-notes">
+        <div class="field-group"><label>Notizen <span class="gedcom-tag">NOTE</span></label><textarea id="f_note" placeholder="Freitext, Anmerkungen..."></textarea></div>
+        <div id="source-list"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addSourceEntry()">+ Quelle hinzufügen</button>
+      </div>
+
+      <button class="section-toggle" onclick="toggleSection(this,'sec-media')">Medien &amp; Referenzen <span class="arrow">▼</span></button>
+      <div class="section-content" id="sec-media">
+        <div class="field-group"><label>Foto-Referenz <span class="gedcom-tag">OBJE FILE</span></label><input type="text" id="f_photo" placeholder="Dateiname oder URL"></div>
+        <div class="field-group"><label>Externes Profil <span class="gedcom-tag">REFN</span></label><input type="text" id="f_refn" placeholder="Ancestry-ID, FindAGrave etc."></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="savePerson()">💾 Speichern</button>
+      </div>
+      <div id="save-feedback" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ VIEW: FAMILIE ══════════════ -->
+  <div class="view" id="view-family">
+    <div class="card">
+      <div class="card-title">💍 Familienverbindung</div>
+      <div class="alert alert-warn" style="font-size:11px;">Kennziffern werden durch den Admin vergeben. Verbindungen können zur Prüfung markiert werden.</div>
+
+      <div class="field-group"><label>Familien-ID <span class="gedcom-tag">FAM</span></label><input type="text" id="fam_id" value="FAM_B6114" readonly></div>
+      <div class="field-row">
+        <div class="field-group"><label>Partner 1</label><input type="text" id="fam_husb" value="B6114a"></div>
+        <div class="field-group"><label>Partner 2</label><input type="text" id="fam_wife" value="B6114"></div>
+      </div>
+      <div class="field-group"><label>Verbindungstyp <span class="gedcom-tag">MARR / COHA</span></label>
+        <select id="fam_type" onchange="updateFamType()">
+          <option value="MARR">Ehe 1. (→ a)</option><option value="MARR2">Ehe 2. (→ b)</option>
+          <option value="MARR3">Ehe 3. (→ c)</option><option value="COHA">Lebenspartnerschaft (→ p)</option>
+          <option value="CROSS">Stammübergreifend – offen</option>
+        </select>
+      </div>
+      <div id="cross-fam-section" style="display:none;margin-bottom:10px;">
+        <div class="cross-flag">⚠ Stammübergreifend – wird zur Admin-Prüfung markiert.</div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Heiratsdatum <span class="gedcom-tag">MARR DATE</span></label><input type="date" id="fam_marrdate" value="2000-09-15"></div>
+        <div class="field-group"><label>Datum ungenau</label><input type="text" id="fam_marrdate_approx" placeholder="ca. 2000"></div>
+      </div>
+      <div class="field-group"><label>Heiratsort <span class="gedcom-tag">MARR PLAC</span></label><input type="text" id="fam_marrplace" value="Eisenach"></div>
+      <div class="field-group"><label>Scheidungsdatum <span class="gedcom-tag">DIV DATE</span></label><input type="date" id="fam_divdate"></div>
+      <div class="field-group"><label>Notizen <span class="gedcom-tag">NOTE</span></label><textarea id="fam_note" placeholder="Besonderheiten, offene Fragen..."></textarea></div>
+
+      <div class="card-title" style="margin-top:14px;font-size:14px;">👧 Kinder dieser Verbindung</div>
+      <div id="children-list">
+        <div class="person-chip" onclick="drillPerson('B61141','Kind 1')"><div class="num">B61141</div><div><div class="name">Mustermann, Sophie</div><div class="dates">* 2001</div></div><div class="relation-badge">Kind 1</div></div>
+        <div class="person-chip" onclick="drillPerson('B61142','Kind 2')"><div class="num">B61142</div><div><div class="name">Mustermann, Felix</div><div class="dates">* 2003</div></div><div class="relation-badge">Kind 2</div></div>
+        <div class="person-chip" onclick="drillPerson('B61143','Kind 3')"><div class="num">B61143</div><div><div class="name">Mustermann, Lena</div><div class="dates">* 2006</div></div><div class="relation-badge">Kind 3</div></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-secondary btn-sm" onclick="addChildEntry()">+ Kind verknüpfen</button></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveFamily()">💾 Speichern</button>
+      </div>
+      <div id="fam-feedback" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ VIEW: HISTORIE ══════════════ -->
+  <div class="view" id="view-history">
+    <div class="card">
+      <div class="card-title">📋 Änderungshistorie</div>
+      <div class="field-group">
+        <select id="history-filter" onchange="renderHistory()">
+          <option value="all">Alle Personen</option>
+          <option value="B6114">B6114 – Elisabeth</option>
+          <option value="B6114a">B6114a – Hans</option>
+          <option value="B61141">B61141 – Sophie</option>
+          <option value="B61142">B61142 – Felix</option>
+        </select>
+      </div>
+      <div id="history-list">
+        <div class="history-entry"><div class="meta">B6114a · 02.05.2026, 14:32 · von: B6114a</div><div class="change">Beruf: <span class="old">Ingenieur</span> → <span class="new">Dipl.-Ing.</span></div></div>
+        <div class="history-entry"><div class="meta">B61141 · 01.05.2026, 09:15 · von: B6114a</div><div class="change">Geburtsdatum: <span class="old">–</span> → <span class="new">15.03.2001</span></div></div>
+        <div class="history-entry"><div class="meta">B611 · 28.04.2026, 18:00 · von: B6114a</div><div class="change">Sterbeort: <span class="old">–</span> → <span class="new">Eisenach</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ VIEW: ADMIN ══════════════ -->
+  <div class="view" id="view-admin">
+
+    <div class="card">
+      <div class="card-title admin-title">📤 GEDCOM 7.0 Export</div>
+      <div class="alert alert-admin" style="font-size:11px;">Nur Admins können GEDCOM-Dateien erzeugen.</div>
+      <div class="field-row">
+        <div class="field-group"><label>Exportbereich</label>
+          <select id="export-scope"><option value="my">Zweig B6114x</option><option value="stamm">Stamm B</option><option value="all">Alle Stämme A–E</option></select>
+        </div>
+        <div class="field-group"><label>Format</label>
+          <select id="export-format"><option value="gedcom7">GEDCOM 7.0</option><option value="gedcom55">GEDCOM 5.5.1</option></select>
+        </div>
+      </div>
+      <div class="field-group"><label>Vorschau</label>
+        <div class="gedcom-preview" id="gedcom-preview">– Vorschau aktualisieren –</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-sm" onclick="updateGedcomPreview()">↻ Aktualisieren</button>
+        <button class="btn btn-admin" onclick="doExport()">⬇ Exportieren</button>
+      </div>
+      <div id="export-feedback" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title admin-title">⚑ Freigabe-Queue <span id="queue-badge" style="background:var(--review);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:6px;">0</span></div>
+      <div class="alert alert-admin" style="font-size:11px;">Alle Änderungen von Nutzern warten hier auf Freigabe.</div>
+      <div id="queue-list">
+        <div style="color:var(--muted);font-size:12px;padding:8px 0;">Noch keine Einträge.</div>
+      </div>
+      <div id="queue-feedback" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title admin-title">🗄️ Datenbank-Status</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+        <div><span class="dot dot-green"></span>Personen: <strong id="stat-persons">19</strong></div>
+        <div><span class="dot dot-green"></span>Familienverbindungen: <strong>3</strong></div>
+        <div><span class="dot dot-review"></span>In Review-Queue: <strong id="stat-queue">0</strong></div>
+        <div><span class="dot dot-blue"></span>Stammübergreifende Flags: <strong>0</strong></div>
+        <div><span class="dot dot-green"></span>Letzter Export: <strong>01.01.2026</strong></div>
+        <div><span class="dot dot-green"></span>GEDCOM: <strong>7.0 · Heritage-kompatibel</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button onclick="navTo('tree')" id="nav-tree" class="active"><span class="nav-icon">🌳</span>Baum</button>
+  <button onclick="navTo('history')" id="nav-history"><span class="nav-icon">📋</span>Historie</button>
+  <button onclick="navTo('admin')" id="nav-admin" class="admin-tab" style="display:none"><span class="nav-icon">🔒</span>Admin</button>
+</nav>
+
+<!-- MODAL: Neue Person -->
+<div class="modal-overlay" id="modal-new-person">
+  <div class="modal">
+    <div class="modal-title">Neue Person – Kennziffer-Assistent</div>
+    <div class="alert alert-info" style="font-size:11px;">Kennziffern werden vom Admin bestätigt.</div>
+    <div class="field-group"><label>Bezugsperson (Kennziffer)</label><input type="text" id="modal_ref" placeholder="z.B. B6114" oninput="suggestNewNumbers()"></div>
+    <div class="field-group"><label>Art der neuen Person</label>
+      <select id="modal_type" onchange="suggestNewNumbers()">
+        <option value="child">Leibliches Kind</option>
+        <option value="spouse_a">Ehepartner 1. Ehe (→ a)</option>
+        <option value="spouse_b">Ehepartner 2. Ehe (→ b)</option>
+        <option value="spouse_c">Ehepartner 3. Ehe (→ c)</option>
+        <option value="partner_p">Lebenspartner (→ p)</option>
+        <option value="stepchild">Mitgebrachtes Kind</option>
+      </select>
+    </div>
+    <div id="suggested-numbers" style="margin-bottom:10px;"></div>
+    <div class="field-group"><label>Kennziffer bestätigen</label><input type="text" id="modal_confirmed_num" placeholder="Kennziffer"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="confirmNewPerson()">Weiter</button>
+      <button class="btn btn-back" onclick="closeModal('modal-new-person')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATEN
+// ═══════════════════════════════════════════════
+const DB = {
+  persons: {
+    'B61':{givenname:'Johann',surname:'Eisenberg',sex:'M',living:'N',birthdate:'1920-03-10',birthplace:'Nesselröden',deathdate:'1998-07-22',deathplace:'Eisenach'},
+    'B61a':{givenname:'Anna',surname:'Eisenberg',birthname:'Müller',sex:'F',living:'N',birthdate:'1923-05-01',deathdate:'2005-11-14',deathplace:'Eisenach'},
+    'B62':{givenname:'Wilhelm',surname:'Eisenberg',sex:'M',living:'N',birthdate:'1918-06-14',deathdate:'1992-02-03'},
+    'B62a':{givenname:'Else',surname:'Eisenberg',birthname:'Braun',sex:'F',living:'N',birthdate:'1921-09-20',deathdate:'1989-03-11'},
+    'B63':{givenname:'Klara',surname:'Eisenberg',sex:'F',living:'N',birthdate:'1925-12-01',deathdate:'2010-04-17'},
+    'B611':{givenname:'Friedrich',surname:'Eisenberg',sex:'M',living:'Y',birthdate:'1948-09-03',birthplace:'Eisenach',occupation:'Pfarrer i.R.'},
+    'B611a':{givenname:'Maria',surname:'Eisenberg',birthname:'Schmidt',sex:'F',living:'Y',birthdate:'1951-02-17'},
+    'B612':{givenname:'Heinrich',surname:'Eisenberg',sex:'M',living:'Y',birthdate:'1950-04-22'},
+    'B612a':{givenname:'Inge',surname:'Eisenberg',birthname:'Weber',sex:'F',living:'Y',birthdate:'1953-07-09'},
+    'B613':{givenname:'Ruth',surname:'Eisenberg',sex:'F',living:'Y',birthdate:'1955-11-30'},
+    'B6111':{givenname:'Thomas',surname:'Eisenberg',sex:'M',living:'Y',birthdate:'1971-03-08'},
+    'B6111a':{givenname:'Petra',surname:'Eisenberg',birthname:'Koch',sex:'F',living:'Y',birthdate:'1973-05-14'},
+    'B6112':{givenname:'Monika',surname:'Eisenberg',sex:'F',living:'Y',birthdate:'1973-08-22'},
+    'B6113':{givenname:'Georg',surname:'Eisenberg',sex:'M',living:'Y',birthdate:'1977-01-17'},
+    'B6114':{givenname:'Elisabeth',surname:'Eisenberg',sex:'F',living:'Y',birthdate:'1975-06-05',birthplace:'Eisenach'},
+    'B6114a':{givenname:'Hans',surname:'Mustermann',sex:'M',living:'Y',birthdate:'1973-03-12',birthplace:'Frankfurt am Main',occupation:'Dipl.-Ing.'},
+    'B61141':{givenname:'Sophie',surname:'Mustermann',sex:'F',living:'Y',birthdate:'2001-03-15'},
+    'B61142':{givenname:'Felix',surname:'Mustermann',sex:'M',living:'Y',birthdate:'2003-07-22'},
+    'B61143':{givenname:'Lena',surname:'Mustermann',sex:'F',living:'Y',birthdate:'2006-01-09'},
+  },
+  // Welche Kennziffern haben einen Review-Flag
+  reviewFlags: new Set(),
+  families:{'FAM_B6114':{husb:'B6114a',wife:'B6114',type:'MARR',marrdate:'2000-09-15',marrplace:'Eisenach',children:['B61141','B61142','B61143']}},
+  history:[],
+  queue:[],  // Admin-Freigabe-Queue
+  currentUser:'B6114a',
+  isAdmin:false
+};
+
+const FIELDS=['givenname','surname','birthname','nickname','prefix','suffix','sex','birthdate',
+  'birthdate_approx','birthplace','birthmap','chrdate','chrplace','living','deathdate',
+  'deathdate_approx','deathplace','deathcause','burialdate','burialplace','cremation',
+  'occupation','education','title','religion','nationality','note','photo','refn'];
+
+const KZ_REGEX=/^[A-E](\d+(\.\d+)?)([abcp](\d+(\.\d+)?)?)?$/;
+
+// ═══════════════════════════════════════════════
+// NAVIGATION STACK (Drill-Down)
+// ═══════════════════════════════════════════════
+let navStack = [{ view:'tree', label:'Stammbaum' }];
+let activeView = 'tree';
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  bc.innerHTML = navStack.map((item, i) => {
+    const isLast = i === navStack.length - 1;
+    return `<div class="bc-item">
+      ${i > 0 ? '<span class="bc-sep">›</span>' : ''}
+      <button class="bc-btn${isLast ? ' active' : ''}${item.view==='admin'?' bc-admin':''}"
+        onclick="navigateTo(${i})">${item.label}</button>
+    </div>`;
+  }).join('');
+
+  // Zurück-Bar: nur anzeigen wenn Stack > 1
+  const backBar = document.getElementById('back-bar');
+  const backLabel = document.getElementById('back-label');
+  if (navStack.length > 1) {
+    const parent = navStack[navStack.length - 2];
+    backLabel.textContent = `Zurück zu: ${parent.label}`;
+    backBar.style.display = 'block';
+  } else {
+    backBar.style.display = 'none';
+  }
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  activeView = id;
+  window.scrollTo(0, 0);
+}
+
+function navTo(viewId, label) {
+  // Bottom nav – reset stack to single level
+  const labels = { tree:'Stammbaum', history:'Historie', admin:'Admin' };
+  navStack = [{ view: viewId, label: labels[viewId] || viewId }];
+  showView(viewId);
+  renderBreadcrumb();
+  updateBottomNav(viewId);
+}
+
+function navigateTo(stackIdx) {
+  navStack = navStack.slice(0, stackIdx + 1);
+  showView(navStack[stackIdx].view);
+  renderBreadcrumb();
+}
+
+function navigateBack() {
+  if (navStack.length > 1) {
+    navStack.pop();
+    const top = navStack[navStack.length - 1];
+    showView(top.view);
+    renderBreadcrumb();
+  }
+}
+
+function pushView(viewId, label) {
+  navStack.push({ view: viewId, label });
+  showView(viewId);
+  renderBreadcrumb();
+}
+
+function updateBottomNav(id) {
+  document.querySelectorAll('nav.bottom-nav button').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('nav-' + id);
+  if (el) el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// DRILL-DOWN AKTIONEN
+// ═══════════════════════════════════════════════
+function drillPerson(kz, relation) {
+  const p = DB.persons[kz] || {};
+  const name = p.givenname ? `${p.givenname} ${p.surname||''}`.trim() : kz;
+  pushView('person', `${kz} ${name}`);
+  loadPersonForm(kz, relation);
+  updateBottomNav('');
+}
+
+function drillFamily() {
+  pushView('family', 'Familie B6114');
+  updateBottomNav('');
+}
+
+// ═══════════════════════════════════════════════
+// PERSON FORMULAR
+// ═══════════════════════════════════════════════
+function loadPersonForm(kz, relation) {
+  const p = DB.persons[kz] || {};
+  document.getElementById('person-view-title').textContent = `✏️ ${relation||'Person'} – ${kz}`;
+  document.getElementById('f_kennziffer').value = kz;
+  validateKennziffer(document.getElementById('f_kennziffer'));
+  FIELDS.forEach(f => { const el=document.getElementById('f_'+f); if(el) el.value=p[f]||''; });
+  // living-Fallback: wenn kein Wert gesetzt, aus Sterbedatum ableiten
+  const livingEl = document.getElementById('f_living');
+  if (!livingEl.value) {
+    livingEl.value = (p.deathdate || p.deathdate_approx) ? 'N' : 'Y';
+  }
+  document.getElementById('save-feedback').innerHTML='';
+  document.getElementById('resi-list').innerHTML='';
+  document.getElementById('source-list').innerHTML='';
+  // Personendaten aufklappen
+  document.getElementById('sec-person').classList.add('open');
+  document.querySelector('[onclick="toggleSection(this,\'sec-person\')"]').classList.add('open');
+}
+
+function savePerson() {
+  const kz = document.getElementById('f_kennziffer').value.trim();
+  const fb = document.getElementById('save-feedback');
+
+  if (!KZ_REGEX.test(kz)) { fb.innerHTML='<div class="alert alert-warn">⚠ Ungültige Kennziffer.</div>'; return; }
+  if (!canEdit(kz)) { fb.innerHTML='<div class="alert alert-warn">⛔ Keine Berechtigung für diese Person.</div>'; return; }
+
+  const old = DB.persons[kz] ? {...DB.persons[kz]} : {};
+  const updated = {};
+  FIELDS.forEach(f => { const el=document.getElementById('f_'+f); if(el) updated[f]=el.value; });
+
+  const changes = FIELDS.filter(f => (old[f]||'') !== (updated[f]||''));
+  if (!changes.length) { fb.innerHTML='<div class="alert alert-info">Keine Änderungen erkannt.</div>'; return; }
+
+  // Speichern
+  DB.persons[kz] = updated;
+
+  // Review-Flag setzen und Chip (Name, Datum, Flag) aktualisieren
+  DB.reviewFlags.add(kz);
+  refreshChip(kz);
+
+  // Historie
+  const now = new Date().toLocaleString('de-DE');
+  const histEntries = [];
+  changes.forEach(f => {
+    const entry = { kennziffer:kz, ts:now, by:DB.currentUser, field:f, old:old[f]||'–', new:updated[f] };
+    DB.history.unshift(entry);
+    histEntries.push(entry);
+  });
+
+  // Queue-Eintrag
+  const p = DB.persons[kz];
+  const personName = `${p.givenname||''} ${p.surname||''}`.trim() || kz;
+  const qEntry = {
+    id: Date.now(),
+    type: 'person',
+    kz,
+    personName,
+    by: DB.currentUser,
+    ts: now,
+    changes: histEntries,
+    status: 'pending'
+  };
+  DB.queue.unshift(qEntry);
+  updateQueueBadge();
+  renderQueue();
+
+  // Feedback kurz zeigen, dann zurück
+  fb.innerHTML=`<div class="alert alert-review">✓ Gespeichert · ${changes.length} Feld(er) geändert · In Review-Queue eingetragen.</div>`;
+  renderHistory();
+
+  setTimeout(() => navigateBack(), 1200);
+}
+
+// ═══════════════════════════════════════════════
+// FAMILIE SPEICHERN
+// ═══════════════════════════════════════════════
+function saveFamily() {
+  const famId = document.getElementById('fam_id').value;
+  const now = new Date().toLocaleString('de-DE');
+
+  // Queue-Eintrag
+  const qEntry = {
+    id: Date.now(),
+    type: 'family',
+    kz: famId,
+    personName: famId,
+    by: DB.currentUser,
+    ts: now,
+    changes: [{ field:'Familienverbindung', old:'–', new:'Geändert' }],
+    status: 'pending'
+  };
+  DB.queue.unshift(qEntry);
+  updateQueueBadge();
+  renderQueue();
+
+  document.getElementById('fam-feedback').innerHTML='<div class="alert alert-review">✓ Gespeichert · In Review-Queue eingetragen.</div>';
+  setTimeout(() => navigateBack(), 1200);
+}
+
+// ═══════════════════════════════════════════════
+// REVIEW-FLAG AUF CHIP
+// ═══════════════════════════════════════════════
+function updateChipReviewFlag(kz) {
+  const chip = document.getElementById('chip-' + kz);
+  if (!chip) return;
+  // Alten Flag entfernen falls vorhanden
+  const old = chip.querySelector('.review-flag');
+  if (old) old.remove();
+  if (DB.reviewFlags.has(kz)) {
+    const flag = document.createElement('div');
+    flag.className = 'review-flag';
+    flag.textContent = 'review';
+    chip.appendChild(flag);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// QUEUE
+// ═══════════════════════════════════════════════
+function updateQueueBadge() {
+  const pending = DB.queue.filter(q => q.status === 'pending').length;
+  document.getElementById('queue-badge').textContent = pending;
+  document.getElementById('stat-queue').textContent = pending;
+}
+
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  if (!DB.queue.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0;">Noch keine Einträge.</div>';
+    return;
+  }
+  list.innerHTML = DB.queue.map(q => {
+    const isPending = q.status === 'pending';
+    const changeList = q.changes.map(c =>
+      `<span style="font-size:11px;color:var(--muted);">${c.field}:</span> <span style="text-decoration:line-through;color:var(--danger);font-size:11px;">${c.old}</span> → <span style="color:var(--success);font-size:11px;">${c.new}</span>`
+    ).join('<br>');
+
+    return `<div class="queue-entry ${isPending?'pending':'done'}" id="qe-${q.id}">
+      <div class="q-meta">${q.type==='family'?'💍':'👤'} ${q.personName} (${q.kz}) · ${q.ts} · von: ${q.by}</div>
+      <div class="q-detail">${changeList}</div>
+      ${isPending ? `<div class="q-actions">
+        <button class="btn btn-sm btn-primary" onclick="approveQueue(${q.id})">✓ Freigeben</button>
+        <button class="btn btn-sm btn-secondary" onclick="rejectQueue(${q.id})">✗ Ablehnen</button>
+      </div>` : `<div style="font-size:11px;color:var(--muted);">${q.status==='approved'?'✓ Freigegeben':'✗ Abgelehnt'}</div>`}
+    </div>`;
+  }).join('');
+}
+
+function approveQueue(id) {
+  const q = DB.queue.find(q => q.id === id);
+  if (!q) return;
+  q.status = 'approved';
+  // Review-Flag vom Chip entfernen
+  DB.reviewFlags.delete(q.kz);
+  refreshChip(q.kz);
+  updateQueueBadge();
+  renderQueue();
+  document.getElementById('queue-feedback').innerHTML='<div class="alert alert-success">✓ Freigegeben. Änderung übernommen.</div>';
+}
+
+function rejectQueue(id) {
+  const q = DB.queue.find(q => q.id === id);
+  if (!q) return;
+  q.status = 'rejected';
+  updateQueueBadge();
+  renderQueue();
+  document.getElementById('queue-feedback').innerHTML='<div class="alert alert-warn">Abgelehnt. Nutzer wird informiert.</div>';
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN TOGGLE
+// ═══════════════════════════════════════════════
+function toggleAdmin() {
+  DB.isAdmin = !DB.isAdmin;
+  const btn = document.getElementById('adminToggle');
+  const tab = document.getElementById('nav-admin');
+  btn.classList.toggle('active', DB.isAdmin);
+  btn.textContent = DB.isAdmin ? '🔒 Admin aktiv' : 'Admin-Modus';
+  tab.style.display = DB.isAdmin ? 'flex' : 'none';
+  if (!DB.isAdmin && activeView === 'admin') navTo('tree');
+}
+
+// ═══════════════════════════════════════════════
+// KENNZIFFER
+// ═══════════════════════════════════════════════
+function validateKennziffer(input) {
+  const val = input.value.trim();
+  const valid = KZ_REGEX.test(val);
+  document.getElementById('kz-valid').style.display = valid ? 'inline' : 'none';
+  document.getElementById('kz-invalid').style.display = (!valid&&val.length>0) ? 'inline' : 'none';
+  document.getElementById('cross-family-flag').style.display = (val.length>1&&val[0]!==DB.currentUser[0]) ? 'block' : 'none';
+  document.getElementById('no-edit-flag').style.display = (valid&&!canEdit(val)) ? 'block' : 'none';
+  const hint = document.getElementById('kz-hint');
+  if (valid) { hint.style.color='var(--success)'; hint.textContent=decodeKZ(val); }
+  else if (val.length>0) { hint.style.color='var(--danger)'; hint.textContent='Format: [A–E][Ziffern][a/b/c/p optional]'; }
+  else hint.textContent='';
+}
+
+function decodeKZ(kz) {
+  const s={A:'Hesseröder',B:'Willershäuser',C:'Rendaer',D:'Oetmannshäuser',E:'Marburger'};
+  const sm=kz.match(/[abcp]/);
+  const t=!sm?'Leibl. Mitglied':sm[0]==='a'?'Ehep. 1.Ehe':sm[0]==='b'?'Ehep. 2.Ehe':sm[0]==='c'?'Ehep. 3.Ehe':'Lebenspartner';
+  const num=kz.replace(/^[A-E]/,'').replace(/[abcp].*$/,'');
+  const depth=num.includes('.')?num.split('.')[0].length+1:num.length;
+  return `${s[kz[0]]||'?'} Stamm · ${t} · Gen.-Tiefe ${depth}`;
+}
+
+function canEdit(kz) {
+  if(DB.isAdmin)return true;
+  if(kz[0]!==DB.currentUser[0])return false;
+  if(kz===DB.currentUser)return true;
+  const mb=DB.currentUser.replace(/[abcp].*$/,'');
+  const tb=kz.replace(/[abcp].*$/,'');
+  if(mb.startsWith(tb)&&mb.length-tb.length<=2)return true;
+  if(tb.startsWith(mb)&&tb.length-mb.length<=2)return true;
+  if([mb,mb+'a',mb+'b',mb+'c',mb+'p'].includes(kz))return true;
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+// GESCHWISTER / SEKTION
+// ═══════════════════════════════════════════════
+function toggleSiblings(btn, listId) {
+  btn.classList.toggle('open');
+  document.getElementById(listId).classList.toggle('open');
+  const a=btn.querySelector('.sib-arrow');
+  a.textContent=btn.classList.contains('open')?'▲':'▼';
+}
+function toggleSection(btn, secId) {
+  btn.classList.toggle('open');
+  document.getElementById(secId).classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════
+// FAMILIE
+// ═══════════════════════════════════════════════
+function updateFamType(){document.getElementById('cross-fam-section').style.display=document.getElementById('fam_type').value==='CROSS'?'block':'none';}
+function addChildEntry(){const kz=prompt('Kennziffer des Kindes:');if(!kz)return;const li=document.createElement('div');li.className='person-chip';li.innerHTML=`<div class="num">${kz}</div><div><div class="name">– Daten bitte eintragen –</div></div><div class="relation-badge">Kind</div>`;li.onclick=()=>drillPerson(kz,'Kind');document.getElementById('children-list').appendChild(li);}
+
+// ═══════════════════════════════════════════════
+// WOHNORTE & QUELLEN
+// ═══════════════════════════════════════════════
+function addResiEntry(){document.getElementById('resi-list').insertAdjacentHTML('beforeend',`<div style="border:1px solid var(--border);border-radius:3px;padding:10px;margin-bottom:8px;"><div class="field-row"><div class="field-group"><label>Von</label><input type="date"></div><div class="field-group"><label>Bis</label><input type="date"></div></div><div class="field-group"><label>Adresse <span class="gedcom-tag">RESI PLAC</span></label><input type="text" placeholder="Straße, Ort, Land"></div></div>`);}
+function addSourceEntry(){document.getElementById('source-list').insertAdjacentHTML('beforeend',`<div style="border:1px solid var(--border);border-radius:3px;padding:10px;margin-bottom:8px;"><div class="field-group"><label>Quelle <span class="gedcom-tag">SOUR</span></label><input type="text" placeholder="Kirchenbuch, Standesamt…"></div><div class="field-group"><label>Seite <span class="gedcom-tag">SOUR PAGE</span></label><input type="text" placeholder="S. 42, Nr. 17"></div><div class="field-group"><label>Qualität <span class="gedcom-tag">QUAY</span></label><select><option value="2" selected>2 – Erstquelle</option><option value="1">1 – Zweitquelle</option><option value="0">0 – Unzuverlässig</option><option value="3">3 – Direkte Aussage</option></select></div></div>`);}
+
+// ═══════════════════════════════════════════════
+// NEUE PERSON
+// ═══════════════════════════════════════════════
+function initNewPerson(ref){document.getElementById('modal_ref').value=ref||'';document.getElementById('modal_confirmed_num').value='';document.getElementById('suggested-numbers').innerHTML='';if(ref)suggestNewNumbers();document.getElementById('modal-new-person').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function suggestNewNumbers(){
+  const ref=document.getElementById('modal_ref').value.trim();
+  const type=document.getElementById('modal_type').value;
+  const c=document.getElementById('suggested-numbers');
+  if(!ref){c.innerHTML='';return;}
+  let s=[];
+  if(type==='child'){const ex=Object.keys(DB.persons).filter(k=>{const b=k.replace(/[abcp].*$/,'');return b.startsWith(ref)&&b.length===ref.length+1&&/\d$/.test(b);}).map(k=>parseInt(k.replace(/[abcp].*$/,'').slice(-1)));const next=ex.length?Math.max(...ex)+1:1;s=[next<=9?`${ref}${next}`:`${ref}.${next}`];}
+  else if(type==='spouse_a')s=[`${ref}a`];else if(type==='spouse_b')s=[`${ref}b`];else if(type==='spouse_c')s=[`${ref}c`];else if(type==='partner_p')s=[`${ref}p`];
+  else if(type==='stepchild'){const ex=Object.keys(DB.persons).filter(k=>k.startsWith(ref+'a')&&/\d$/.test(k));s=[`${ref}a${ex.length+1}`];}
+  if(s.length){c.innerHTML=`<div class="alert alert-info" style="font-size:11px;">Vorschlag: <strong>${s.join(', ')}</strong> · Vom Admin bestätigen lassen.</div>`;document.getElementById('modal_confirmed_num').value=s[0];}
+}
+function confirmNewPerson(){
+  const kz=document.getElementById('modal_confirmed_num').value.trim();
+  if(!KZ_REGEX.test(kz)){alert('Ungültige Kennziffer');return;}
+  closeModal('modal-new-person');
+  pushView('person', `Neu: ${kz}`);
+  updateBottomNav('');
+  FIELDS.forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
+  document.getElementById('f_kennziffer').value=kz;
+  validateKennziffer(document.getElementById('f_kennziffer'));
+  document.getElementById('f_sex').value='';document.getElementById('f_living').value='Y';
+  document.getElementById('person-view-title').textContent=`✏️ Neue Person – ${kz}`;
+  document.getElementById('save-feedback').innerHTML='';
+  document.getElementById('sec-person').classList.add('open');
+  document.querySelector('[onclick="toggleSection(this,\'sec-person\')"]').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════
+// HISTORIE
+// ═══════════════════════════════════════════════
+function renderHistory(){
+  const filter=document.getElementById('history-filter').value;
+  const entries=filter==='all'?DB.history:DB.history.filter(h=>h.kennziffer===filter);
+  if(!entries.length)return;
+  document.getElementById('history-list').innerHTML=entries.map(h=>`<div class="history-entry"><div class="meta">${h.kennziffer} · ${h.ts} · von: ${h.by}</div><div class="change">${h.field}: <span class="old">${h.old}</span> → <span class="new">${h.new}</span></div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// GEDCOM
+// ═══════════════════════════════════════════════
+function formatGedDate(iso){if(!iso)return'';const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];const[y,mo,d]=iso.split('-');return`${parseInt(d)} ${m[parseInt(mo)-1]} ${y}`;}
+function updateGedcomPreview(){
+  let out='0 HEAD\n1 GEDC\n2 VERS 7.0\n1 CHAR UTF-8\n1 SOUR Ferrimontana-UI\n2 VERS 1.0\n1 DATE 2 MAY 2026\n1 LANG Deutsch\n\n';
+  let idx=1;const kzToId={};
+  for(const[kz,p]of Object.entries(DB.persons)){
+    const id=`@I${String(idx).padStart(3,'0')}@`;kzToId[kz]=id;
+    out+=`0 ${id} INDI\n`;
+    if(p.givenname||p.surname){out+=`1 NAME ${p.givenname||''} /${p.surname||''}/\n`;if(p.givenname)out+=`2 GIVN ${p.givenname}\n`;if(p.surname)out+=`2 SURN ${p.surname}\n`;if(p.birthname)out+=`2 _MARN ${p.birthname}\n`;}
+    if(p.sex)out+=`1 SEX ${p.sex}\n`;
+    if(p.birthdate||p.birthplace){out+=`1 BIRT\n`;if(p.birthdate)out+=`2 DATE ${formatGedDate(p.birthdate)}\n`;if(p.birthdate_approx)out+=`2 DATE ${p.birthdate_approx}\n`;if(p.birthplace)out+=`2 PLAC ${p.birthplace}\n`;}
+    if(p.deathdate||p.deathplace){out+=`1 DEAT\n`;if(p.deathdate)out+=`2 DATE ${formatGedDate(p.deathdate)}\n`;if(p.deathplace)out+=`2 PLAC ${p.deathplace}\n`;}
+    if(p.occupation)out+=`1 OCCU ${p.occupation}\n`;
+    if(p.note)out+=`1 NOTE ${p.note}\n`;
+    out+=`1 _FAMN ${kz}\n1 CHAN\n2 DATE 2 MAY 2026\n\n`;idx++;
+  }
+  for(const[,fam]of Object.entries(DB.families)){
+    out+=`0 @F${String(idx).padStart(3,'0')}@ FAM\n`;
+    if(fam.husb&&kzToId[fam.husb])out+=`1 HUSB ${kzToId[fam.husb]}\n`;
+    if(fam.wife&&kzToId[fam.wife])out+=`1 WIFE ${kzToId[fam.wife]}\n`;
+    if(fam.type)out+=`1 ${fam.type}\n`;
+    if(fam.marrdate)out+=`2 DATE ${formatGedDate(fam.marrdate)}\n`;
+    if(fam.marrplace)out+=`2 PLAC ${fam.marrplace}\n`;
+    (fam.children||[]).forEach(ckz=>{if(kzToId[ckz])out+=`1 CHIL ${kzToId[ckz]}\n`;});
+    out+='\n';idx++;
+  }
+  out+='0 TRLR';
+  document.getElementById('gedcom-preview').textContent=out;
+}
+function doExport(){updateGedcomPreview();document.getElementById('export-feedback').innerHTML='<div class="alert alert-success">✓ Export erzeugt. Im produktiven System startet hier der Download.</div>';}
+
+// ═══════════════════════════════════════════════
+// TASTATUR-FIX: Bottom-Nav wegblenden wenn Tastatur offen
+// ═══════════════════════════════════════════════
+(function() {
+  const bottomNav = document.querySelector('nav.bottom-nav');
+  const INPUTS = 'input, select, textarea';
+
+  // Methode 1: visualViewport API (iOS 13+, Android Chrome)
+  if (window.visualViewport) {
+    let lastHeight = window.visualViewport.height;
+    window.visualViewport.addEventListener('resize', () => {
+      const current = window.visualViewport.height;
+      const keyboardOpen = current < lastHeight * 0.85;
+      bottomNav.style.display = keyboardOpen ? 'none' : '';
+      document.querySelector('main').style.paddingBottom = keyboardOpen ? '16px' : '72px';
+      // Aktives Element ins Sichtfeld scrollen
+      if (keyboardOpen && document.activeElement && document.activeElement.matches(INPUTS)) {
+        setTimeout(() => {
+          document.activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+      lastHeight = current;
+    });
+  }
+
+  // Methode 2: focus/blur Fallback (ältere Browser)
+  document.addEventListener('focusin', e => {
+    if (e.target.matches(INPUTS)) {
+      setTimeout(() => {
+        bottomNav.style.display = 'none';
+        document.querySelector('main').style.paddingBottom = '16px';
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 350);
+    }
+  });
+
+  document.addEventListener('focusout', e => {
+    if (e.target.matches(INPUTS)) {
+      setTimeout(() => {
+        if (!document.activeElement || !document.activeElement.matches(INPUTS)) {
+          bottomNav.style.display = '';
+          document.querySelector('main').style.paddingBottom = '72px';
+        }
+      }, 400);
+    }
+  });
+})();
+
+// ═══════════════════════════════════════════════
+// BAUM-CHIPS AUS DB RENDERN
+// ═══════════════════════════════════════════════
+
+// Konfiguration: welche Personen erscheinen in welcher Ebene
+const TREE_CONFIG = [
+  {
+    containerId: 'tree-gen2',
+    label: 'Großeltern (Gen +2)',
+    main: [
+      { kz:'B61',  relation:'Großvater' },
+      { kz:'B61a', relation:'Großmutter' },
+    ],
+    siblings: {
+      label: 'Geschwister – Großonkel / Großtanten',
+      id: 'sib-gen2',
+      persons: [
+        { kz:'B62',  relation:'Großonkel' },
+        { kz:'B62a', relation:'angeh.' },
+        { kz:'B63',  relation:'Großtante' },
+      ]
+    }
+  },
+  {
+    containerId: 'tree-gen1',
+    label: 'Eltern (Gen +1)',
+    main: [
+      { kz:'B611',  relation:'Schwiegervater' },
+      { kz:'B611a', relation:'Schwiegermutter' },
+    ],
+    siblings: {
+      label: 'Geschwister – Onkel / Tanten',
+      id: 'sib-gen1',
+      persons: [
+        { kz:'B612',  relation:'Onkel' },
+        { kz:'B612a', relation:'angeh.' },
+        { kz:'B613',  relation:'Tante' },
+      ]
+    }
+  },
+  {
+    containerId: 'tree-gen0',
+    label: 'Meine Generation (Gen 0)',
+    main: [
+      { kz:'B6114',  relation:'Ehefrau',  style:'border-color:var(--gold);',   badgeStyle:'background:var(--gold);color:var(--ink);' },
+      { kz:'B6114a', relation:'Ich',      style:'border-color:var(--sienna);', badgeStyle:'background:var(--sienna);color:var(--parchment);' },
+    ],
+    siblings: {
+      label: 'Geschwister – Schwager / Schwägerinnen',
+      id: 'sib-gen0',
+      persons: [
+        { kz:'B6111',  relation:'Schwager' },
+        { kz:'B6111a', relation:'angeh.' },
+        { kz:'B6112',  relation:'Schwägerin' },
+        { kz:'B6113',  relation:'Schwager' },
+      ]
+    }
+  },
+  {
+    containerId: 'tree-gen-1',
+    label: 'Kinder (Gen −1)',
+    main: [
+      { kz:'B61141', relation:'Kind 1' },
+      { kz:'B61142', relation:'Kind 2' },
+      { kz:'B61143', relation:'Kind 3' },
+    ]
+  },
+  {
+    containerId: 'tree-gen-2',
+    label: 'Enkel (Gen −2)',
+    main: [],
+    addNew: 'B61141'
+  }
+];
+
+function formatYear(dateStr) {
+  if (!dateStr) return '';
+  return dateStr.split('-')[0];
+}
+
+function chipDates(p) {
+  const birth = p.birthdate || p.birthdate_approx || '';
+  const death = p.deathdate || p.deathdate_approx || '';
+  const bYear = formatYear(birth) || birth;
+  const dYear = formatYear(death) || death;
+  if (!bYear && !dYear) return '';
+  if (bYear && dYear) return `* ${bYear} † ${dYear}`;
+  if (bYear) return `* ${bYear}`;
+  return `† ${dYear}`;
+}
+
+function chipName(p) {
+  if (!p || (!p.givenname && !p.surname)) return '–';
+  const parts = [];
+  if (p.surname) parts.push(p.surname + (p.birthname ? ` geb. ${p.birthname}` : ''));
+  if (p.givenname) parts.push(p.givenname);
+  return parts.join(', ');
+}
+
+function renderChip(kz, relation, style='', badgeStyle='') {
+  const p = DB.persons[kz] || {};
+  const name = chipName(p);
+  const dates = chipDates(p);
+  const reviewFlag = DB.reviewFlags.has(kz) ? '<div class="review-flag">review</div>' : '';
+  return `<div class="person-chip" id="chip-${kz}" onclick="drillPerson('${kz}','${relation}')" style="${style}">
+    <div class="num">${kz}</div>
+    <div><div class="name">${name}</div>${dates ? `<div class="dates">${dates}</div>` : ''}</div>
+    <div class="relation-badge" style="${badgeStyle}">${relation}</div>
+    ${reviewFlag}
+  </div>`;
+}
+
+function renderSiblingChip(kz, relation) {
+  const p = DB.persons[kz] || {};
+  const name = chipName(p);
+  return `<div class="sibling-chip" onclick="drillPerson('${kz}','${relation}')">
+    <div class="num">${kz}</div><div class="name">${name}</div><div class="rel">${relation}</div>
+  </div>`;
+}
+
+function renderTree() {
+  TREE_CONFIG.forEach(gen => {
+    const container = document.getElementById(gen.containerId);
+    if (!container) return;
+    let html = `<div class="gen-label">${gen.label}</div>`;
+
+    // Hauptpersonen
+    gen.main.forEach(({ kz, relation, style='', badgeStyle='' }) => {
+      html += renderChip(kz, relation, style, badgeStyle);
+    });
+
+    // Geschwister (klappbar)
+    if (gen.siblings) {
+      const count = gen.siblings.persons.length;
+      html += `<button class="sibling-toggle" onclick="toggleSiblings(this,'${gen.siblings.id}')">
+        <span class="sib-arrow">▼</span>&nbsp;${gen.siblings.label} (${count})
+      </button>
+      <div class="sibling-list" id="${gen.siblings.id}">
+        ${gen.siblings.persons.map(({ kz, relation }) => renderSiblingChip(kz, relation)).join('')}
+      </div>`;
+    }
+
+    // Enkel-Platzhalter
+    if (gen.addNew !== undefined) {
+      html += `<div class="person-chip" onclick="initNewPerson('${gen.addNew}')" style="opacity:.6;">
+        <div class="num" style="color:var(--muted)">–</div>
+        <div><div class="name" style="color:var(--muted);font-style:italic;">Noch keine Daten</div></div>
+        <div class="relation-badge">+ hinzufügen</div>
+      </div>`;
+    }
+
+    container.innerHTML = html;
+  });
+}
+
+// Chip nach Speichern aktualisieren (Name, Datum, Review-Flag)
+function refreshChip(kz) {
+  // Suche Chip-Konfiguration
+  for (const gen of TREE_CONFIG) {
+    const found = (gen.main || []).find(m => m.kz === kz);
+    if (found) {
+      const container = document.getElementById(gen.containerId);
+      if (!container) return;
+      const old = document.getElementById('chip-' + kz);
+      if (!old) return;
+      const tmp = document.createElement('div');
+      tmp.innerHTML = renderChip(kz, found.relation, found.style||'', found.badgeStyle||'');
+      old.replaceWith(tmp.firstElementChild);
+      return;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+renderTree();
+renderBreadcrumb();
+renderQueue();
+</script>
+</body>
+</html>
